@@ -1,0 +1,20 @@
+import random
+import numpy as np
+from np.random import normal
+import scipy as sp
+import math
+N = 100000
+nt = 20
+d = .01
+L = 10
+def dx():
+  return normal(.0,1/(2*math.pi*(d**2)))
+def dy():
+  return normal(.0,1/(2*math.pi*(d**2)))
+def dz():
+  return normal(.0,1/(2*math.pi*(d**2)))
+def theta(x,y,z):
+  return np.arctan(y/x)
+def rho(x,y,z):
+  return np.sqrt(np.square(x) + np.square(y))
+
