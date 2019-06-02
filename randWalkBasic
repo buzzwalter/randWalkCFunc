@@ -7,6 +7,7 @@ N = 100000
 nt = 20
 d = .01
 L = 10
+A = [np.zeros(3)]*N
 def dx():
   return normal(.0,1/(2*math.pi*(d**2)))
 def dy():
@@ -17,4 +18,11 @@ def theta(x,y,z):
   return np.arctan(y/x)
 def rho(x,y,z):
   return np.sqrt(np.square(x) + np.square(y))
-
+#def l(x,y,z)
+  return (x**2+y**2+z**2)**.5
+for i in range(nt):
+  for item in A:
+    item = np.add(np.array([dx(),dy(),dz()]),item)
+    if l(item[0],item[1],item[2])>L
+      #implement through back 
+  
