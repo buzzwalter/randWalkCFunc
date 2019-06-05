@@ -3,41 +3,48 @@ import numpy as np
 from numpy.random import normal
 import scipy as sp
 import math
-N = 100
+import matplotlib.pyplot as plt
+N = 1000
 counts = 0
 counter = 0
 percent = 0
-nt = 6400
-d = float(.1)
-L = 100
-A = [np.linspace(0.0,0.01,num=3)]*N
-B = [np.zeros(3)]*N
+nt = 20000
+d = float(.5)
+m = 10
+L = 1000
+A = [np.zeros(3)]*N
+B = [np.zeros(2)]*N
 C = np.zeros(3)
 def dx():
-  return normal(d,10*d)
+  return normal(0,m*d)
 def dy():
-  return normal(d,10*d)
+  return normal(0,m*d)
 def dz():
-  return normal(d,10*d)
-def theta(x,y,z):
+  return normal(0,m*d)
+def theta(x,y):
   return np.arctan(y/x)
 def rho(x,y):
   return np.sqrt(np.square(x) + np.square(y))
-def l(x,y,z):
-  return (x**2+y**2+z**2)**.5
+def l(a):
+  return ((a[0])**2+(a[1])**2+(a[2])**2)**.5
+def influx(a):
+  return np.array([a[0]-normal(a[0],m*d),a[1]-normal(a[1],m*d),a[2]-normal(a[2],m*d)])
+def cylindricTransF(a):
+  return np.array([rho(a[0],a[1]),theta(a[0],a[1]),a[2]])
+def step(a):
+  C = [dx(),dy(),dz()]
+  return = np.add(C,a)
 for i in range(nt):
   for item in A:
-    C = [dx(),dy(),dz()]
-    item = np.add(C,item)
-    A[counter] = item
-    if L<l(item[0],item[1],item[2]):
-      item = np.subtract(item,C)
+    A[counter] = ste(item)
+    while L<=l(A[counter]):
+      item = influx(A[counter])
       A[counter] = item
-    B = np.array([rho(item[0],item[1]),theta(item[0],item[1],item[2]),item[2]])
-    if (L/(2**(1./3.)))<l(item[0],item[1],item[2]):
+    B = cylindricTransF(A[counter])
+    if (L/(2**(1./3.)))<l(A[counter]):
       counts += 1
     counter += 1
   counter = 0
   percent = float(counts/N)
   counts = 0
-  print(percent)
+print(percent)
