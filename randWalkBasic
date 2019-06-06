@@ -1,4 +1,4 @@
-#File: RandomWalkCFunc.ipynb
+#File: RandomWalkBasic.ipynb
 #Description:  A sample of N particles starts at the center of a cuboid of volume L^3 and is allowed to undergo a random walk. The percentage 
 #is calculated at the end along with time required for the computation.
 import random
@@ -22,15 +22,15 @@ B = [np.zeros(2)]*N
 C = np.zeros(3)
 
 #Funtion: dxi()
-#Description: Gives the probability distribution drawn from to take a step.
+#Description: gives the probability distribution drawn from to take a step.
 #Parameters:n/a.
-#Returns:a value normally distributed with sd = d.
+#Returns: float normally distributed with sd = d.
 def dxi():
   return normal(0,d)
 #Funtions: theta(),rho()
+#Description: gives the spherical transformation.
 #Parameters: x,y - position of particle in cartesian.
-#Description: Gives the spherical transformation.
-#Returns:values between 0 and pi for theta and 0 and L for rho.
+#Returns: float between 0 and pi for theta and 0 and L for rho.
 def theta(x,y):
   if (x<0 and y>0) or (x<0 and y<0):
     return math.pi + np.arctan(y/x)
@@ -38,16 +38,40 @@ def theta(x,y):
     return np.arctan(y/x)
 def rho(x,y):
   return np.sqrt(np.square(x) + np.square(y))
+  
+#Funtion: l(a)
+#Description: calculates the particle distance from the center.
+#Parameters: a - particle array containing coordinates.
+#Returns: distance as a float between 0 and L.
 def l(a):
   return ((a[0])**2+(a[1])**2+(a[2])**2)**.5
+  
+#Function: influx(a)
+#Description: accounts for particles coming from the boundary to maintain N effectively.
+#Parameters: a - particle array containing coordinates.
+#Returns: numpy array cotaining the new particle position.
 def influx(a):
-  return np.array([normal(0,d),normal(0,d),normal(0,d)])
+  return np.array([normal(0,L),normal(0,L),normal(0,L)])
+  
+
+#Function: cylindricTransF(a)
+#Description: converts the coordinates from cartesian to cylindrical.
+#Parameters: a - particle array containing coordinates.
+#Returns: numpy array cotaining the transformed particle coordinates.
 def cylindricTransF(a):
   return np.array([rho(a[0],a[1]),theta(a[0],a[1]),a[2]])
+  
+
+#Function: step(a)
+#Description: computes a step taken by the particle.
+#Parameters: a - particle array containing coordinates.
+#Returns: numpy array cotaining the new particle position.
 def step(a):
   C = [dxi(),dxi(),dxi()]
   return np.add(C,a)
+  
 for i in range(nt):
+  #counter keeps track of the position in the list. 
   for item in A:
     A[counter] = step(item)
     while L<=l(A[counter]):
