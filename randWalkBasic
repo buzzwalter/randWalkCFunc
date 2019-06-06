@@ -1,3 +1,6 @@
+#File: RandomWalkCFunc.ipynb
+#Description:  A sample of N particles starts at the center of a cuboid of volume L^3 and is allowed to undergo a random walk. The percentage 
+#is calculated at the end along with time required for the computation.
 import random
 import numpy as np
 from numpy.random import normal
@@ -17,12 +20,17 @@ L = 1000
 A = [np.zeros(3)]*N
 B = [np.zeros(2)]*N
 C = np.zeros(3)
-def dx():
+
+#Funtion: dxi()
+#Description: Gives the probability distribution drawn from to take a step.
+#Parameters:n/a.
+#Returns:a value normally distributed with sd = d.
+def dxi():
   return normal(0,d)
-def dy():
-  return normal(0,d)
-def dz():
-  return normal(0,d)
+#Funtions: theta(),rho()
+#Parameters: x,y - position of particle in cartesian.
+#Description: Gives the spherical transformation.
+#Returns:values between 0 and pi for theta and 0 and L for rho.
 def theta(x,y):
   if (x<0 and y>0) or (x<0 and y<0):
     return math.pi + np.arctan(y/x)
@@ -37,7 +45,7 @@ def influx(a):
 def cylindricTransF(a):
   return np.array([rho(a[0],a[1]),theta(a[0],a[1]),a[2]])
 def step(a):
-  C = [dx(),dy(),dz()]
+  C = [dxi(),dxi(),dxi()]
   return np.add(C,a)
 for i in range(nt):
   for item in A:
