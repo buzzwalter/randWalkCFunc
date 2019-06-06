@@ -14,7 +14,7 @@ counts = 0
 counter = 0
 percent = 0
 nt = 6400
-r = 640
+r = 508
 d = float(5)
 L = 1000
 A = [np.zeros(3)]*N
@@ -88,6 +88,68 @@ for i in range(nt):
         r -= 1
       else:
         r += 1
+print(r)
+print(percent)
+print('It took',time.time()-start, 'seconds')
+
+
+
+
+
+
+import random
+import numpy as np
+from numpy.random import normal
+import scipy as sp
+import math
+import matplotlib.pyplot as plt
+import time
+start = time.time()
+N = 1000
+counts = 0
+counter = 0
+percent = 0
+nt = 6400
+r = 492
+d = float(5)
+L = 1000
+A = [np.zeros(3)]*N
+B = [np.zeros(2)]*N
+C = np.zeros(3)
+def dx():
+  return normal(0,d)
+def dy():
+  return normal(0,d)
+def dz():
+  return normal(0,d)
+def theta(x,y):
+  if (x<0 and y>0) or (x<0 and y<0):
+    return math.pi + np.arctan(y/x)
+  else:
+    return np.arctan(y/x)
+def rho(x,y):
+  return np.sqrt(np.square(x) + np.square(y))
+def l(a):
+  return ((a[0])**2+(a[1])**2+(a[2])**2)**.5
+def influx(a):
+  return np.array([a[0]-normal(0,d),a[1]-normal(0,d),a[2]-normal(0,d)])
+def cylindricTransF(a):
+  return np.array([rho(a[0],a[1]),theta(a[0],a[1]),a[2]])
+def step(a):
+  C = [dx(),dy(),dz()]
+  return np.add(C,a)
+for i in range(nt):
+  for item in A:
+    A[counter] = step(item)
+    while L<=l(A[counter]):
+      A[counter] = influx(A[counter])
+    B[counter] = cylindricTransF(A[counter])
+    if r <l(A[counter]):
+      counts += 1
+    counter += 1
+  percent = float(counts/N)  
+  counter = 0
+  counts = 0
 print(r)
 print(percent)
 print('It took',time.time()-start, 'seconds')
