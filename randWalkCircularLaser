@@ -1,49 +1,50 @@
+#File: ranWalkVar.py
+#Description: A routine to find the steady state between removing(bleaching) molecules in a large container.  The boundary models the 
+#effectively infinite number of particles replacing the removed particles in equilibrium.
+#
 import numpy as np
 import scipy as sp
 from numpy.random import normal
 from numpy.random import uniform
 from numpy.random import poisson
 import math
+import matplotlib.pyplot as plt
 dt = .1
-dx = .01
+dx = .1
 D = (dx**2)/dt
-Nt = 20
-N = 3
+Nt = 5000
+N = 1
 r1 = 1
 r2 = 3
 r3 = 4
-p =  .1
+p =  20
 N0 = uniform(-r3,r3,(N,2))
 popIt = dt*p*math.pi*(r3**3-r2**3)/6
 P = poisson(popIt,Nt)
 print(P)
 counter = 0
 L1 = N0.tolist()
-L0 = N0.tolist()
-#change so that every function returns something(list or no side effects)
-#gaussian deviates
-#check bounds first
-#keep in mind constant is dx not the step length really dx^2/dt
-#keep in mind what U looks like as function of rho
-def step(A,B): 
-  A = bound(A,B)
+numWalkers = np.zeros(Nt)
+#Function: step
+#Description: adds a varaible step size to each particle.
+#Parmeters: A - The list to be stepped.
+#Returns: The new stepped list of particles.
+def step(A): 
   X = np.add(np.array(A),normal(0,2*D,(len(A),2)))
+  A = bound(X,A)
   return X.tolist()
+
+#Function: l
+#Description: returns the length a particle is away from the center of the system.
+#Parameters: a - The position array of a particle.
+#Returns: A double representing the distance.
 def l(a):
   return ((a[0])**2+(a[1])**2)**.5
 
-#def theta(x,y):
-#  if (x<0 and y>0) or (x<0 and y<0):
-#    return math.pi + np.arctan(y/x)
-#  else:
-#    return np.arctan(y/x)
-
-#def rho(x,y):
-#  return np.sqrt(np.square(x) + np.square(y))
-
-#def cylindricTransF(a):
-#  return np.array([rho(a[0],a[1]),theta(a[0],a[1])])
-
+#Function: populate
+#Description: adds particles according to the population rate.
+#Parmeters: A - The list to be stepped.
+#Returns: The new augmented list of particles.
 def populate(A,partCnt):
   i = 0
   while (i<partCnt):
@@ -51,26 +52,31 @@ def populate(A,partCnt):
         if r2<l(a)<r3:
             A.append(a)
             i+=1
-  return A
-            
-def bleach(A):
+  return A 
+
+#Function: remove
+#Description: Removes particles according to the position being inside a certain radius.
+#Parmeters: A - The list to be stepped.
+#Returns: The new reduced list of particles.
+def remove(A):
   X = [i for i,x in enumerate(A) if l(x) < r1]
   for i in range(len(X)):
-    del A[X[i]]
+    del A[X[i]-i]
   return A
-    
+
+#Function: bound
+#Description: Prevents particles from moving outside the bounds of the system.
+#Parmeters: A - The list to be stepped, B - list holding previous positions.
+#Returns: The old list.
 def bound(A,B):
   X = [i for i,x in enumerate(A) if r3<l(x)]
   if X:
     for i in range(len(X)):
       A[X[i]] = B[X[i]]
   return A
-#%debug
-for i in range(Nt):
-  previousL1 = np.array(L1)
-  L1 = step(L1,previousL1)
-  L1 = populate(L1,P[i])
-  L1 = bleach(L1)
-  counter = len([i for i,x in enumerate(L1) if r1 < l(x) < r2/math.sqrt(2)])
-  print(counter/N) 
-  counter = 0
+for timestep in range(Nt):
+  L1 = step(L1)
+  L1 = populate(L1,P[timestep])
+  L1 = remove(L1)
+  numWalkers[timestep] = len(L1)
+plt.plot(np.arange(Nt),numWalkers)
