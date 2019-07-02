@@ -8,23 +8,27 @@ from numpy.random import normal
 from numpy.random import uniform
 from numpy.random import poisson
 import math
+from math import pi
 import matplotlib.pyplot as plt
+dr = 0.1
 dt = .1
 dx = .1
+delta = .1
 D = (dx**2)/dt
 Nt = 5000
 N = 1
 r1 = 1
 r2 = 3
 r3 = 4
-p =  20
+numDelta = int((r2-r1)/delta)
+p =  50
 N0 = uniform(-r3,r3,(N,2))
 popIt = dt*p*math.pi*(r3**3-r2**3)/6
 P = poisson(popIt,Nt)
 print(P)
 counter = 0
 L1 = N0.tolist()
-numWalkers = np.zeros(Nt)
+U = np.zeros(numDelta)
 #Function: step
 #Description: adds a varaible step size to each particle.
 #Parmeters: A - The list to be stepped.
@@ -74,9 +78,22 @@ def bound(A,B):
     for i in range(len(X)):
       A[X[i]] = B[X[i]]
   return A
+
+#Function: getArea
+#Description: returns the area of an annulus.
+#Parmeters:x - lower bound radius of annulus, y - uppe rbound radius of annulus.
+#Returns: double area.
+def annArea(x,y):
+    return pi*y**2-pi*x**2
 for timestep in range(Nt):
   L1 = step(L1)
   L1 = populate(L1,P[timestep])
   L1 = remove(L1)
-  numWalkers[timestep] = len(L1)
-plt.plot(np.arange(Nt),numWalkers)
+a = 1.;
+b = 1.+delta;
+for deltai in range(numDelta):
+    U[deltai] = sum(1 for x in L1 if a<l(x)<b)/(annArea(a,b)*len(L1))
+    a = a+delta;
+    b = b+delta;
+plt.plot(np.linspace(1.0,3.0,num = 20),U)
+plt.show()
