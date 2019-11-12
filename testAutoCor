@@ -1,0 +1,18 @@
+# File: testAutoCor.py
+# Description: Generates specifically correlated data to test an auto correlation <dIdI>/<I^2>
+#
+rand_Spl = np.random.uniform(size=10000)
+rand_Spl[0] = 1
+for i in range(9999):
+    rand_Spl[i+1] = .999*rand_Spl[i]-normal(loc=0.0, scale=.01)
+print(rand_Spl)
+#
+#Calculate Normalization Factor
+S = sum(((rand_Spl[:-1])**2)/10000)
+#
+N = rand_Spl.size-1
+autoCor = np.zeros(N)
+autoCor[0] = sum(rand_Spl*rand_Spl)/N
+for i in range(1,N):
+    autoCor[i] = sum(rand_Spl[:-i]*rand_Spl[i:])/(N-i)
+plt.plot(np.arange(500),autoCor[:500]/S)
