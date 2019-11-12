@@ -1,0 +1,239 @@
+# File: 3dproblem.py
+# Description: A routine to find the steady state between removing(bleaching) molecules in a large container and the 
+# effectively infinite number of particles replacing the removed particles in equilibrium.
+#
+import numpy as np
+import scipy as sp
+from numpy.random import normal
+from numpy.random import uniform
+from numpy.random import poisson
+import numpy.linalg as LA
+import math
+from math import pi
+import matplotlib.pyplot as plt
+dt = .1
+dr = .1
+N = 10
+Nt = 100000
+abs_ZCreate=4
+abs_ZBound =3.5
+rCreate=3.5
+rBound=4
+popIt = .01
+caps_Frac = 2*pi*rCreate*rCreate/(2*pi*rCreate*(2*abs_ZCreate+rCreate))
+popItCap = popIt*caps_Frac
+popItWall = popIt
+pCap = poisson(popItCap,Nt)
+pWall = poisson(popItWall,Nt)
+lamda = 1
+k_IPlane = 1.0
+k_IZ = 1.0
+k_DPlane=7
+k_DZ=7
+C_I=1
+C_D=.5
+
+#
+#for discrete initial condition
+r_disc=1.8
+#
+
+#Function: illFunc
+#Description: Sums the illumination values associated with the particles to get total intensity.
+#Parmeters: A - The array containing particles.
+#Returns: Real value corresponding to intensity.
+#
+# Note: A must be (N,3), must be cartesian
+#
+def illFunc(A):
+    #ask to make sure this should be return a scalar
+    return sum(C_I*np.exp(-k_IPlane*(A.T[0]**2))*np.exp(-k_IPlane*(A.T[1]**2))*np.exp(-k_IZ*(A.T[2]**2)))
+#Function: disFunc
+#Description: gives the value for the disappearance likelihood at each particle position.
+#Parmeters: A - The array containing particles.
+#Returns: Entire array corresponding to likelihood of dissappearancef-(N,3) dimension.
+#
+# Note: A must be (N,3), must be cartesian
+#
+def disFunc(A):
+    #
+    #discrete initial condition implementation. Normally more complicated
+    return C_D*np.exp(-k_DPlane*(A.T[0]**2))*np.exp(-k_DPlane*(A.T[1]**2))*np.exp(-k_DZ*(A.T[2]**2))
+    #
+    
+#Function: rTransf
+#Description: takes the particles from cylindrical to rectilinear
+#Parmeters: A - The array containing particles.
+#Returns: Entire array converted to rectilinear coordinates-(N,3) dimension.
+#
+# Note: A must be (N,3) for this func
+#
+def rTransf(A):
+    r=A.T[0]
+    phi = A.T[1]
+    x= r*np.cos(phi)
+    y=r*np.sin(phi)
+    return np.vstack((x,y,A.T[2])).T
+#Function: cTransf
+#Description: takes the particles from rectilinear to cylindrical
+#Parmeters: A - The array containing particles.
+#Returns: Entire array converted to cylindrical coordinates-(N,3) dimension.
+#
+# Note: A must be (N,3) for this func
+#
+def cTransf(A):
+    x = A.T[0]
+    y = A.T[1]
+    r = (x**2 + y**2)**(0.5)
+    phi = np.arctan(np.divide(y,x))
+    return np.vstack((r,phi,A.T[2])).T
+#Function: getCDFSample
+#Description: gets a distribution that will correspond to mapping the radius to a uniform distibution
+#Parmeters: length - number of positions to generate.
+#Returns: (1,N) array with radius values.
+def getCDFSample(length):
+    # get uniform random number
+    value = np.random.random(size=length)
+    return rBound*np.sqrt(value)
+    # sample my custom function
+#Function: step
+#Description: takes particles through a time step. Calls Bounds before it returns.
+#Parmeters: A - The array containing particles.
+#Returns: Returns the new positions of the particles given valid steps-(3,N) dimension.
+#
+#Note: A must be (N,3) in cartesian
+#
+def step(A):
+    X = np.add(A,normal(0,2*dr,(A.shape[0],3)))
+    return bound(X,A)
+#Function: Remove
+#Description: removes particles accoring to the disappearance function associated with the particles.
+#Parmeters: A - The array containing particles.
+#Returns: Reduced particle array-(N-number to remove,3) dimension.
+#
+#Note: A must be (N,3) should be done from cartesian
+#
+def remove(A):
+    bool_M = disFunc(A)*dt<np.random.random(size=A.shape[0])
+    #for i in enumerate(bool_M):
+     #   if(bool_M.size>0 & bool_M[i] == True):
+      #      np.delete(A,1,i)
+    #return A
+    C = np.vstack((bool_M,bool_M,bool_M))
+    return np.reshape(A[C.T],(int(A[C.T].size/3),3))
+#
+#Function: addCap
+#Description: helper function to populate; generates a specific number of particles split evenly between the endcaps of the cylinder.
+#Parmeters: length - number of particles to add.
+#Returns: Returns positions of new partcicles-(length,3) dimension.
+#
+#Note: population done in cylindrical
+#
+def addCap(length):
+    c = uniform(-1,1,length)>0
+    x = np.where(c,abs_ZCreate*np.ones(length),-abs_ZCreate*np.ones(length))
+    r = getCDFSample(length)
+    phi = uniform(0,2*math.pi,length)
+    return np.vstack((r,phi,x)).T
+#Function: addWall
+#Description: helper function to populate; generates a specific number of particles on the wall of the cylinder.
+#Parmeters: length - number of particles to add.
+#Returns: Returns positions of new partcicles-(length,3) dimension.
+#
+#Note: population done in cylindrical
+#
+def addWall(length):
+    z=uniform(-abs_ZCreate,abs_ZCreate,length)
+    r=rCreate*np.ones(length)
+    phi = uniform(0,2*math.pi,length)
+    return np.vstack((r,phi,z)).T
+#Function: populate
+#Description: handles the division of creating particles in each time step from the boundary.
+#Parmeters: A - The array containing particles.
+#           index - the current time step number.
+#Returns: Augmented particle array-(N+number to add,3) dimension.
+#
+#Note: A must be (N,3) and population done in cylindrical
+#
+def populate(A,index):
+    return np.vstack((A,addCap(pCap[index]),addWall(pWall[index])))
+#Function: checkR
+#Description: helper function to bound; restricts movement in radial direction according to rBound.
+#Parmeters: A - The stepped array containing particles.
+#           B - The initial array containing particles.
+#Returns: radially restricted particle array-(N,3) dimension.
+#
+#Note: A must be (N,3), should take in cartesian A
+#
+def checkR(A,B):
+    c = cTransf(A).T[0]>rBound
+    bool_M = np.vstack((c,c,c)).T
+    return np.where(bool_M,B,A)
+#Function: checkZ
+#Description: helper function to bound; restricts movement in z direction according to abs_ZBound.
+#Parmeters: A - The stepped array containing particles.
+#           B - The initial array containing particles.
+#Returns: z restricted particle array-(N,3) dimension.
+#
+#Note: A must be (N,3), should take in cartesian A
+#
+def checkZ(A,B):
+    c = np.abs(A.T[2])>abs_ZBound
+    bool_M = np.vstack((c,c,c)).T
+    return np.where(bool_M,B,A)
+#Function: bound
+#Description: helper function to step; restricts movement. Calls both checkR and checkZ helpers
+#Parmeters: A - The stepped array containing particles.
+#           B - The initial array containing particles.
+#Returns: total restricted particle array-(N,3) dimension.
+#
+#Note: A must be (N,3), should be in cartesian
+#
+def bound(A,B):
+    X = checkR(A,B)
+    X = checkZ(X,B)
+    return X
+#iterate in rectilinear
+walkers = np.vstack((getCDFSample(N),uniform(0,2*math.pi,N),uniform(-abs_ZBound,abs_ZBound,N))).T
+print(walkers)
+#
+#testing
+#
+I = np.zeros(Nt)
+s=0
+y = np.ones((int(.1*Nt),int(rBound/dr)))
+x = np.ones(int(.1*Nt))
+#Test Timing:
+#%prun step(rTransf(walkers))
+#%prun remove(walkers)
+#%prun populate(walkers,0)
+#
+for i in range(Nt):
+    walkers = step(rTransf(walkers))
+    walkers = remove(walkers)
+    walkers = populate(cTransf(walkers),i)
+    #radiusChk = walkers.T[0]
+    ri=0
+    rf=ri+dr
+    if (i>=(Nt-int(.1*Nt))):
+        for j in range(int(rBound/dr)):
+            y[i-Nt+int(.1*Nt)][j] +=len(np.where(np.logical_and(walkers.T[0]>ri, walkers.T[0]<rf))[0])/((pi*rf**2-pi*ri**2)*walkers.shape[0])
+            #(radiusChk[radiusChk<rf].size-(radiusChk.size-radiusChk[radiusChk>ri].size))
+            ri+=dr
+            rf+=dr
+            x[i-Nt+int(.1*Nt)]=len(np.where(np.sqrt(rTransf(walkers).T[0]**2+rTransf(walkers).T[1]**2+rTransf(walkers).T[2]**2)<1))
+            
+    #I[i]=illFunc(walkers)
+    #s+=I[i]
+#%prun step(rTransf(walkers))
+#%prun remove(walkers)
+#%prun populate(walkers,Nt)
+print(walkers.shape[0])
+avg  = np.zeros(int(rBound/dr))
+print(sum(x)/(.1*Nt))
+for i in range(int(rBound/dr)):
+    avg[i] = sum(y.T[i])/(Nt)
+
+
+
+plt.plot(dr*np.arange(int(rBound/dr)),avg)
